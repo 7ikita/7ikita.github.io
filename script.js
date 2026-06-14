@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     audioPlayer.autoplay = true;
     audioPlayer.muted = true;
-    audioPlayer.volume = parseFloat(volumeSlider ? volumeSlider.value : 1);
+    audioPlayer.volume = parseFloat(volumeSlider ? volumeSlider.value : 0.2);
     audioPlayer.loop = true;
 
     function attemptAutoplay() {
