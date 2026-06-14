@@ -573,9 +573,9 @@ body::after {
 
 .progress-bar {
 
-    width: 100px;
+    width: 80px;
 
-    height: 1px;
+    height: 3px;
 
     background: rgba(255, 255, 255, 0.1);
 
