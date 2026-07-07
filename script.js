@@ -125,10 +125,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const secs = seconds % 60;
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     }
+
+    // Format Time HH:MM or M:SS
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
     
     // Duration will be set when metadata is loaded
     
     // ============== SOCIAL LINKS HANDLING ==============
+
     const socialLinks = document.querySelectorAll('.social-links a');
     const socialConfig = {
         0: { // Twitch
@@ -146,19 +154,24 @@ document.addEventListener('DOMContentLoaded', function() {
         3: { // Twitter
             url: 'https://x.com/7ikita',
             action: 'open'
+        },
+        4: { // Share / Upload
+            url: 'image-uploader.html',
+            action: 'navigate'
         }
     };
     
     socialLinks.forEach((link, index) => {
         link.addEventListener('click', function(e) {
-            e.preventDefault();
-            
             const config = socialConfig[index];
+            
+            if (!config) return;
+            e.preventDefault();
             
             if (config.action === 'open') {
                 window.open(config.url, '_blank');
-            } else if (config.action === 'email') {
-                openEmailModal();
+            } else if (config.action === 'navigate') {
+                window.location.href = config.url;
             }
         });
     });
@@ -170,54 +183,6 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Vielen Dank für dein Interesse! Du wurdest zur Community hinzugefügt.');
         });
     }
-    
-    // ============== EMAIL MODAL HANDLING ==============
-    const emailModal = document.getElementById('emailModal');
-    const emailForm = document.getElementById('emailForm');
-    const modalClose = document.querySelector('.modal-close');
-    
-    function openEmailModal() {
-        emailModal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    }
-    
-    function closeEmailModal() {
-        emailModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-        emailForm.reset();
-    }
-    
-    modalClose.addEventListener('click', closeEmailModal);
-    
-    // Close modal when clicking outside
-    emailModal.addEventListener('click', function(e) {
-        if (e.target === emailModal) {
-            closeEmailModal();
-        }
-    });
-    
-    // Handle email form submission
-    emailForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const senderName = document.getElementById('senderName').value;
-        const senderEmail = document.getElementById('senderEmail').value;
-        const message = document.getElementById('messageText').value;
-        
-        // Compose mailto link
-        const subject = encodeURIComponent(`Nachricht von ${senderName}`);
-        const body = encodeURIComponent(
-            `Absender: ${senderName}\nEmail: ${senderEmail}\n\n${message}`
-        );
-        
-        // Open default email client
-        window.location.href = `mailto:business.glownikitaa@gmail.com?subject=${subject}&body=${body}`;
-        
-        // Close modal after a short delay
-        setTimeout(() => {
-            closeEmailModal();
-        }, 500);
-    });
 });
 
 // Add animations on page load

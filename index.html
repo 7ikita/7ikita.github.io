@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>7IKITA </title>
+    <link rel="icon" href="modd-4x.png" type="image/png">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
@@ -31,6 +32,7 @@
                             <a role="button" tabindex="0" class="patreon-button"><img src="ml.webp" alt="Patreon"></a>
                             <a role="button" tabindex="0"><i class="fab fa-discord"></i></a>
                             <a role="button" tabindex="0"><img src="x-twitter-logo.webp" alt="X Logo"></a>
+                            <a href="image-uploader.html" class="share-upload-button" role="button" tabindex="0"><i class="fas fa-share-nodes"></i></a>
                         </div>
                     </div>
                 </div>
@@ -56,7 +58,7 @@
                         <button class="control-btn" id="nextBtn"><i class="fas fa-forward-step"></i></button>
                         <div class="player-volume">
                             <i class="fas fa-volume-up"></i>
-                            <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1" aria-label="Lautstärke">
+                            <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.2" aria-label="Lautstärke">
                         </div>
                         <audio id="audioPlayer" autoplay muted playsinline preload="auto">
                             <source src="./Bladi Labas.mp3" type="audio/mpeg">
@@ -71,20 +73,6 @@
             <div class="right-visual"></div>
         </div>
 
-        <!-- Email Modal -->
-        <div class="email-modal" id="emailModal">
-            <div class="modal-content">
-                <button class="modal-close">&times;</button>
-                <h2>Schreib uns eine Email</h2>
-                <form id="emailForm">
-                    <input type="text" id="senderName" placeholder="Dein Name" required>
-                    <input type="email" id="senderEmail" placeholder="Deine Email" required>
-                    <textarea id="messageText" placeholder="Deine Nachricht..." rows="8" required></textarea>
-                    <button type="submit" class="send-btn">Senden</button>
-                </form>
-                <p class="email-info">Email wird an: <strong>business.glownikitaa@gmail.com</strong> gesendet</p>
-            </div>
-        </div>
     </div>
 
     <script src="script.js"></script>
