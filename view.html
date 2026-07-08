@@ -99,7 +99,31 @@
         const STORAGE_KEY = 'imageUploaderEntries';
         const TTL_MS = 24 * 60 * 60 * 1000;
         const urlParams = new URLSearchParams(window.location.search);
-        const requestedId = urlParams.get('id');
+        // prefer hash (view.html#id) so links work when opened locally (file://)
+        let requestedId = null;
+        try {
+            const hash = window.location.hash || '';
+            if (hash && hash.startsWith('#')) {
+                requestedId = decodeURIComponent(hash.slice(1));
+            }
+        } catch (e) {
+            requestedId = null;
+        }
+
+        // fallback to path-segment (view.html/id) or query param
+        if (!requestedId) {
+            try {
+                const path = window.location.pathname || '';
+                const parts = path.split('/').filter(Boolean);
+                const idx = parts.findIndex(p => p === 'view.html');
+                if (idx >= 0 && parts.length > idx + 1) {
+                    requestedId = decodeURIComponent(parts[idx + 1]);
+                }
+            } catch (e) {
+                requestedId = null;
+            }
+        }
+        if (!requestedId) requestedId = urlParams.get('id');
         const content = document.getElementById('content');
 
         function cleanupExpiredEntries() {
