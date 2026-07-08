@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shared Content - 7IKITA</title>
+    <link rel="icon" href="modd-4x.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1a3e 50%, #0f0f2e 100%);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .view-card {
+            width: 100%;
+            max-width: 900px;
+            background: rgba(20, 20, 40, 0.92);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            gap: 12px;
+        }
+
+        .topbar a, .topbar button {
+            text-decoration: none;
+            color: #fff;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            padding: 10px 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .topbar a:hover, .topbar button:hover {
+            background: rgba(255,255,255,0.14);
+        }
+
+        .meta {
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+            margin-bottom: 16px;
+            word-break: break-word;
+        }
+
+        .preview-wrap {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 420px;
+            border-radius: 16px;
+            background: rgba(0,0,0,0.2);
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .preview-wrap img,
+        .preview-wrap video {
+            width: 100%;
+            max-height: 70vh;
+            object-fit: contain;
+            display: block;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            padding: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="view-card">
+        <div class="topbar">
+            <a href="index.html"><i class="fas fa-arrow-left"></i> Zurück</a>
+            <a href="image-uploader.html"><i class="fas fa-cloud-arrow-up"></i> Upload</a>
+        </div>
+        <div id="content"></div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'imageUploaderEntries';
+        const TTL_MS = 24 * 60 * 60 * 1000;
+        const urlParams = new URLSearchParams(window.location.search);
+        const requestedId = urlParams.get('id');
+        const content = document.getElementById('content');
+
+        function cleanupExpiredEntries() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return [];
+                const entries = JSON.parse(raw);
+                const now = Date.now();
+                const activeEntries = entries.filter(entry => entry.expiresAt > now);
+                if (activeEntries.length !== entries.length) {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(activeEntries));
+                }
+                return activeEntries;
+            } catch (error) {
+                console.warn('Storage read failed:', error);
+                return [];
+            }
+        }
+
+        function getEntryById(id) {
+            return cleanupExpiredEntries().find(entry => entry.id === id) || null;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        if (!requestedId) {
+            content.innerHTML = '<div class="empty-state">Es wurde kein Upload-Link angegeben.</div>';
+        } else {
+            const entry = getEntryById(requestedId);
+            if (!entry) {
+                content.innerHTML = '<div class="empty-state">Dieser Link ist abgelaufen oder nicht mehr verfügbar.</div>';
+            } else {
+                const title = entry.fileName || 'Geteilte Datei';
+                let mediaHtml = '';
+                if (entry.fileType && entry.fileType.startsWith('image/')) {
+                    mediaHtml = `<img src="${entry.dataUrl}" alt="${title}">`;
+                } else if (entry.fileType && entry.fileType.startsWith('video/')) {
+                    mediaHtml = `<video controls autoplay playsinline><source src="${entry.dataUrl}" type="${entry.fileType}"></video>`;
+                } else {
+                    mediaHtml = '<div class="empty-state">Dieser Dateityp kann hier nicht direkt angezeigt werden.</div>';
+                }
+
+                content.innerHTML = `
+                    <h2>${title}</h2>
+                    <div class="meta">${formatFileSize(entry.fileSize || 0)} • ${new Date(entry.createdAt).toLocaleString('de-DE')}</div>
+                    <div class="preview-wrap">${mediaHtml}</div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

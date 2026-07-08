@@ -182,6 +182,126 @@
             display: none;
         }
 
+        .entries-section {
+            margin-top: 24px;
+            padding: 20px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .entries-section h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .entries-hint {
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+
+        .entries-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .entry-card {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .entry-preview {
+            width: 72px;
+            min-width: 72px;
+            height: 72px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .entry-preview img,
+        .entry-preview video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .entry-preview i {
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .entry-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .entry-content h4 {
+            font-size: 14px;
+            margin-bottom: 4px;
+            word-break: break-word;
+        }
+
+        .entry-content p {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.55);
+            margin-bottom: 8px;
+        }
+
+        .entry-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .entry-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 7px 12px;
+            border-radius: 999px;
+            background: rgba(26, 113, 255, 0.18);
+            color: #fff;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid rgba(26, 113, 255, 0.3);
+        }
+
+        .entry-link:hover {
+            background: rgba(26, 113, 255, 0.28);
+        }
+
+        .empty-state {
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 13px;
+            padding: 8px 0;
+        }
+
+        .preview-container {
+            margin-top: 16px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .preview-media {
+            display: block;
+            width: 100%;
+            max-height: 320px;
+            object-fit: contain;
+        }
+
         .progress-bar-upload {
             width: 100%;
             height: 6px;
@@ -276,7 +396,7 @@
 
         .preview-container {
             margin-top: 20px;
-            display: none;
+            display: block;
         }
 
         .preview-container img,
@@ -325,6 +445,12 @@
             </div>
 
             <div id="uploadResult" style="display:none;"></div>
+
+            <div class="entries-section">
+                <h3>Deine Uploads</h3>
+                <p class="entries-hint">Alle Dateien, die du erstellt hast, werden hier gelistet und bleiben über ihren Link erreichbar.</p>
+                <div id="entriesList" class="entries-list"></div>
+            </div>
         </div>
     </div>
 
@@ -336,6 +462,7 @@
         const uploadResult = document.getElementById('uploadResult');
         const progressFill = document.getElementById('progressFill');
         const uploadStatus = document.getElementById('uploadStatus');
+        const entriesList = document.getElementById('entriesList');
         const backBtn = document.querySelector('.back-btn');
 
         const STORAGE_KEY = 'imageUploaderEntries';
@@ -363,13 +490,17 @@
             }
         }
 
+        function getStoredEntries() {
+            return cleanupExpiredEntries();
+        }
+
         function getEntryById(id) {
-            const entries = cleanupExpiredEntries();
+            const entries = getStoredEntries();
             return entries.find(entry => entry.id === id) || null;
         }
 
         function saveEntry(fileId, dataUrl, fileNameValue, fileType, fileSizeValue) {
-            const entries = cleanupExpiredEntries();
+            const entries = getStoredEntries();
             const entry = {
                 id: fileId,
                 dataUrl,
@@ -385,30 +516,123 @@
             return entry;
         }
 
-        function showStoredEntry(entry) {
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function createShareUrl(fileId) {
+            const currentUrl = new URL('view.html', window.location.href);
+            currentUrl.searchParams.set('id', fileId);
+            return currentUrl.toString();
+        }
+
+        function getMediaMarkup(entry) {
+            const fileName = entry.fileName || 'Upload';
+            if (entry.fileType && entry.fileType.startsWith('image/')) {
+                return `<img class="preview-media" src="${entry.dataUrl}" alt="${escapeHtml(fileName)}">`;
+            }
+
+            if (entry.fileType && entry.fileType.startsWith('video/')) {
+                return `<video class="preview-media" controls><source src="${entry.dataUrl}" type="${entry.fileType}"></video>`;
+            }
+
+            return `<div class="preview-media" style="display:flex;align-items:center;justify-content:center;padding:24px;color:rgba(255,255,255,0.65);"><i class="fas fa-file"></i></div>`;
+        }
+
+        function renderEntriesList(entries) {
+            if (!entriesList) return;
+
+            if (!entries.length) {
+                entriesList.innerHTML = '<p class="empty-state">Noch keine Dateien gespeichert.</p>';
+                return;
+            }
+
+            entriesList.innerHTML = entries.map(entry => `
+                <div class="entry-card">
+                    <div class="entry-preview">
+                        ${entry.fileType && entry.fileType.startsWith('image/') ? `<img src="${entry.dataUrl}" alt="${escapeHtml(entry.fileName || 'Upload')}">` : entry.fileType && entry.fileType.startsWith('video/') ? `<video src="${entry.dataUrl}"></video>` : '<i class="fas fa-file"></i>'}
+                    </div>
+                    <div class="entry-content">
+                        <h4>${escapeHtml(entry.fileName || 'Unbenannte Datei')}</h4>
+                        <p>${formatFileSize(entry.fileSize || 0)} • ${new Date(entry.createdAt).toLocaleString('de-DE')}</p>
+                        <div class="entry-actions">
+                            <a class="entry-link" href="${createShareUrl(entry.id)}">Öffnen</a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showEntry(entry) {
             uploadArea.style.display = 'none';
             uploadProgress.style.display = 'none';
-            uploadResult.style.display = 'none';
+            uploadResult.style.display = 'block';
             uploadStatus.style.display = 'none';
             uploadStatus.textContent = '';
+
+            const shareUrl = createShareUrl(entry.id);
+            uploadResult.innerHTML = `
+                <h3>Upload erfolgreich</h3>
+                <p>Dieser Link ist jetzt verfügbar:</p>
+                <div class="link-container">
+                    <input id="shareLink" value="${shareUrl}" readonly>
+                    <button type="button" class="copy-btn" id="copyLinkBtn">Kopieren</button>
+                </div>
+                <div class="preview-container">
+                    ${getMediaMarkup(entry)}
+                </div>
+                <p class="file-info-item"><span class="file-info-label">Datei:</span> ${escapeHtml(entry.fileName || 'Unbenannte Datei')}</p>
+                <p class="file-info-item"><span class="file-info-label">Größe:</span> ${formatFileSize(entry.fileSize || 0)}</p>
+            `;
+
+            const copyLinkBtn = document.getElementById('copyLinkBtn');
+            if (copyLinkBtn) {
+                copyLinkBtn.addEventListener('click', async function() {
+                    const shareLinkInput = document.getElementById('shareLink');
+                    if (shareLinkInput) {
+                        try {
+                            await navigator.clipboard.writeText(shareLinkInput.value);
+                            copyLinkBtn.textContent = 'Kopiert';
+                            setTimeout(() => {
+                                copyLinkBtn.textContent = 'Kopieren';
+                            }, 1500);
+                        } catch (error) {
+                            shareLinkInput.select();
+                            document.execCommand('copy');
+                        }
+                    }
+                });
+            }
         }
 
         function showExpiredState() {
-            uploadArea.style.display = 'none';
+            uploadArea.style.display = 'block';
             uploadProgress.style.display = 'none';
-            uploadResult.style.display = 'none';
+            uploadResult.style.display = 'block';
             uploadStatus.style.display = 'none';
             uploadStatus.textContent = '';
+            uploadResult.innerHTML = '<p class="empty-state">Dieser Link ist abgelaufen oder nicht mehr verfügbar.</p>';
+        }
+
+        function refreshEntries() {
+            renderEntriesList(getStoredEntries());
         }
 
         if (requestedId) {
             const entry = getEntryById(requestedId);
             if (entry) {
-                showStoredEntry(entry);
+                showEntry(entry);
             } else {
                 showExpiredState();
             }
         }
+
+        refreshEntries();
 
         if (backBtn) {
             backBtn.addEventListener('click', function(e) {
@@ -490,19 +714,31 @@
                 const fileId = 'file-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
                 const dataUrl = e.target.result;
 
+                let entry;
                 try {
-                    saveEntry(fileId, dataUrl, file.name, file.type, file.size);
+                    entry = saveEntry(fileId, dataUrl, file.name, file.type, file.size);
                 } catch (err) {
                     console.warn('Storage limit reached, using memory fallback:', err);
+                    entry = {
+                        id: fileId,
+                        dataUrl,
+                        fileName: file.name,
+                        fileType: file.type,
+                        fileSize: file.size,
+                        createdAt: Date.now(),
+                        expiresAt: Date.now() + TTL_MS
+                    };
                 }
 
                 // Show result
                 setTimeout(function() {
                     uploadProgress.style.display = 'none';
                     uploadArea.style.display = 'block';
-                    uploadResult.style.display = 'none';
                     uploadStatus.style.display = 'none';
                     uploadStatus.textContent = '';
+
+                    showEntry(entry);
+                    refreshEntries();
                 }, 500);
             };
 
