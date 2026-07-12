@@ -158,10 +158,25 @@
         if (!requestedId) {
             content.innerHTML = '<div class="empty-state">Es wurde kein Upload-Link angegeben.</div>';
         } else {
-            const entry = getEntryById(requestedId);
-            if (!entry) {
-                content.innerHTML = '<div class="empty-state">Dieser Link ist abgelaufen oder nicht mehr verfügbar.</div>';
-            } else {
+            // If the hash contains a data URL (embedded), render it directly.
+            if (requestedId.startsWith('data:')) {
+                const dataUrl = requestedId;
+                let mime = '';
+                try {
+                    const m = dataUrl.match(/^data:([^;]+);/);
+                    if (m) mime = m[1];
+                } catch (e) {
+                    mime = '';
+                }
+
+                const entry = {
+                    dataUrl,
+                    fileType: mime,
+                    fileName: 'Geteilte Datei',
+                    fileSize: 0,
+                    createdAt: Date.now()
+                };
+
                 const title = entry.fileName || 'Geteilte Datei';
                 let mediaHtml = '';
                 if (entry.fileType && entry.fileType.startsWith('image/')) {
@@ -177,6 +192,27 @@
                     <div class="meta">${formatFileSize(entry.fileSize || 0)} • ${new Date(entry.createdAt).toLocaleString('de-DE')}</div>
                     <div class="preview-wrap">${mediaHtml}</div>
                 `;
+            } else {
+                const entry = getEntryById(requestedId);
+                if (!entry) {
+                    content.innerHTML = '<div class="empty-state">Dieser Link ist abgelaufen oder nicht mehr verfügbar.</div>';
+                } else {
+                    const title = entry.fileName || 'Geteilte Datei';
+                    let mediaHtml = '';
+                    if (entry.fileType && entry.fileType.startsWith('image/')) {
+                        mediaHtml = `<img src="${entry.dataUrl}" alt="${title}">`;
+                    } else if (entry.fileType && entry.fileType.startsWith('video/')) {
+                        mediaHtml = `<video controls autoplay playsinline><source src="${entry.dataUrl}" type="${entry.fileType}"></video>`;
+                    } else {
+                        mediaHtml = '<div class="empty-state">Dieser Dateityp kann hier nicht direkt angezeigt werden.</div>';
+                    }
+
+                    content.innerHTML = `
+                        <h2>${title}</h2>
+                        <div class="meta">${formatFileSize(entry.fileSize || 0)} • ${new Date(entry.createdAt).toLocaleString('de-DE')}</div>
+                        <div class="preview-wrap">${mediaHtml}</div>
+                    `;
+                }
             }
         }
     </script>

@@ -587,9 +587,16 @@
                 .replace(/'/g, '&#39;');
         }
 
-        function createShareUrl(fileId) {
-            // use hash-style link so it works when opened from file://
-            return new URL('view.html#' + encodeURIComponent(fileId), window.location.href).toString();
+        function createShareUrl(entry) {
+            // If the file is small enough, embed the data URL into the link so
+            // anyone can open it (works on static hosts like github.io).
+            const INLINE_LIMIT = 200000; // ~200KB
+            if (entry && entry.dataUrl && entry.dataUrl.length <= INLINE_LIMIT) {
+                return new URL('view.html#' + encodeURIComponent(entry.dataUrl), window.location.href).toString();
+            }
+
+            // Fallback: use id (requires the entry to exist in localStorage)
+            return new URL('view.html#' + encodeURIComponent(entry.id), window.location.href).toString();
         }
 
         function getMediaMarkup(entry) {
@@ -622,7 +629,7 @@
                         <h4>${escapeHtml(entry.fileName || 'Unbenannte Datei')}</h4>
                         <p>${formatFileSize(entry.fileSize || 0)} • ${new Date(entry.createdAt).toLocaleString('de-DE')}</p>
                         <div class="entry-actions">
-                            <a class="entry-link" href="${createShareUrl(entry.id)}">Öffnen</a>
+                            <a class="entry-link" href="${createShareUrl(entry)}">Öffnen</a>
                             <button class="delete-btn" data-id="${entry.id}" title="Löschen"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
@@ -658,7 +665,7 @@
             uploadStatus.style.display = 'none';
             uploadStatus.textContent = '';
 
-            const shareUrl = createShareUrl(entry.id);
+            const shareUrl = createShareUrl(entry);
             uploadResult.innerHTML = `
                 <h3>Upload erfolgreich</h3>
                 <p>Dieser Link ist jetzt verfügbar:</p>
